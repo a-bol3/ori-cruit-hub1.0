@@ -1,0 +1,24 @@
+export enum DocumentType {
+  PASSPORT = 'PASSPORT',
+  VISA = 'VISA',
+  KARTA_POBYTU = 'KARTA_POBYTU',
+  PESEL = 'PESEL',
+  PAYMENT_PROOF = 'PAYMENT_PROOF',
+  CONTRACT = 'CONTRACT',
+  INSURANCE = 'INSURANCE',
+  MEDICAL_EXAM = 'MEDICAL_EXAM',
+  OTHER = 'OTHER',
+}
+
+export enum DocumentReviewStatus {
+  PENDING = 'PENDING',
+  APPROVED = 'APPROVED',
+  REJECTED = 'REJECTED',
+  REVISION_REQUESTED = 'REVISION_REQUESTED',
+}
+
+export enum ExtractionReviewStatus {
+  PENDING = 'PENDING',
+  CONFIRMED = 'CONFIRMED',
+  REJECTED = 'REJECTED',
+}

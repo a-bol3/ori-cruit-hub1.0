@@ -1,0 +1,566 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  ADMIN
+  RECRUITER
+  LEGAL
+  COORDINATOR
+  MANAGER
+  VIEWER
+}
+
+enum SourceChannel {
+  WHATSAPP
+  SMS
+  EMAIL
+  CALL_SUMMARY
+  WEBSITE
+  MANUAL
+  SPREADSHEET
+}
+
+enum CandidateStatus {
+  NEW_LEAD
+  CONTACT_PENDING
+  CONTACTED
+  INTERESTED
+  NOT_INTERESTED
+  WAITING_FOR_DOCUMENTS
+  PARTIAL_DOCUMENTS
+  READY_FOR_LEGAL_REVIEW
+  LEGAL_REVIEW_IN_PROGRESS
+  LEGAL_MORE_INFO_REQUIRED
+  LEGAL_APPROVED
+  LEGAL_REJECTED
+  WAITING_PAYMENT_PROOF
+  PAYMENT_PROOF_RECEIVED
+  COORDINATOR_HANDOVER_PENDING
+  COORDINATOR_NOTIFIED
+  TRAVEL_PENDING
+  ACCOMMODATION_PENDING
+  PLACED
+  POST_PLACEMENT_ISSUE
+  CLOSED
+}
+
+enum JobStatus {
+  OPEN
+  SUSPENDED
+  CLOSED
+  COMPLETED
+}
+
+enum IdentifierType {
+  PASSPORT
+  PESEL
+  VISA
+  KARTA_POBYTU
+  PHONE
+  EMAIL
+}
+
+enum DocumentType {
+  PASSPORT
+  VISA
+  KARTA_POBYTU
+  PESEL
+  PAYMENT_PROOF
+  CONTRACT
+  INSURANCE
+  MEDICAL_EXAM
+  OTHER
+}
+
+enum DocumentReviewStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  REVISION_REQUESTED
+}
+
+enum ExtractionReviewStatus {
+  PENDING
+  CONFIRMED
+  REJECTED
+}
+
+enum MatchType {
+  EXACT_PHONE
+  EXACT_EMAIL
+  EXACT_IDENTIFIER
+  EXACT_NAME
+  NAME_NATIONALITY
+  NAME_PHONE_FRAGMENT
+  FUZZY_NAME
+}
+
+enum MatchResolutionStatus {
+  UNRESOLVED
+  PENDING_REVIEW
+  CONFIRMED
+  REJECTED
+  AUTO_LINKED
+}
+
+enum TaskStatus {
+  PENDING
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+  SKIPPED
+}
+
+enum TaskType {
+  CONTACT_CANDIDATE
+  REQUEST_DOCUMENTS
+  REVIEW_DOCUMENTS
+  LEGAL_REVIEW
+  COORDINATOR_HANDOVER
+  COLLECT_PAYMENT
+  TRAVEL_ARRANGEMENT
+  ACCOMMODATION_ARRANGEMENT
+  OTHER
+}
+
+enum IssueType {
+  PAYROLL
+  COORDINATOR
+  CONTRACT
+  HOUSING
+  COMMUNICATION
+  OTHER
+}
+
+enum IssueStatus {
+  OPEN
+  INVESTIGATING
+  RESOLVED
+  CLOSED
+}
+
+enum LegalReviewStatus {
+  PENDING
+  IN_PROGRESS
+  MORE_INFO_REQUIRED
+  APPROVED
+  REJECTED
+}
+
+enum HandoverStatus {
+  PENDING
+  NOTIFIED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+enum SpreadsheetImportStatus {
+  UPLOADED
+  PARSING
+  PARSED
+  COMMITTING
+  COMPLETED
+  FAILED
+}
+
+enum SpreadsheetImportType {
+  CANDIDATE_BASE
+  HRAPPKA_EXPORT
+  LEGACY_EXPORT
+}
+
+enum SourceEntityType {
+  CONVERSATION
+  DOCUMENT
+  SPREADSHEET_ROW
+}
+
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  password      String
+  name          String
+  role          UserRole  @default(RECRUITER)
+  isActive      Boolean   @default(true)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  assignedCandidates Candidate[] @relation("RecruiterCandidates")
+  legalReviews       LegalReview[]
+  handovers          CoordinatorHandover[]
+  tasks              CandidateTask[]
+  reviewTasks        ReviewTask[]
+  activities         CandidateActivity[] @relation("Actor")
+  auditLogs          AuditLog[]
+}
+
+model Candidate {
+  id              String          @id @default(cuid())
+  firstName       String
+  lastName        String
+  fullName        String?
+  phone           String?         @unique
+  email           String?         @unique
+  nationality     String?
+  gender          String?
+  location        String?
+  birthDate       DateTime?
+  status          CandidateStatus @default(NEW_LEAD)
+  source          SourceChannel   @default(MANUAL)
+  recruiterId     String?
+  recruiter       User?           @relation("RecruiterCandidates", fields: [recruiterId], references: [id])
+  
+  availabilityDate DateTime?
+  notes            String?         @db.Text
+  
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+
+  identifiers     CandidateIdentifier[]
+  aliases         CandidateAlias[]
+  interests       CandidateOfferInterest[]
+  conversations   CandidateConversation[]
+  documents       CandidateDocument[]
+  statusHistory   CandidateStatusHistory[]
+  tasks           CandidateTask[]
+  activities      CandidateActivity[]
+  legalReviews    LegalReview[]
+  handover        CoordinatorHandover?
+  issues          CandidateIssue[]
+  matches         MatchingDecision[]
+  reviewTasks     ReviewTask[]
+  jobOrders       CandidateJobOrder[]
+  
+  @@index([phone])
+  @@index([email])
+}
+
+model CandidateIdentifier {
+  id          String         @id @default(cuid())
+  candidateId String
+  candidate   Candidate      @relation(fields: [candidateId], references: [id])
+  type        IdentifierType
+  value       String
+  isVerified  Boolean        @default(false)
+  updatedAt   DateTime       @updatedAt
+
+  @@unique([type, value])
+}
+
+model CandidateAlias {
+  id          String    @id @default(cuid())
+  candidateId String
+  candidate   Candidate @relation(fields: [candidateId], references: [id])
+  name        String
+  source      SourceChannel
+}
+
+model Offer {
+  id          String   @id @default(cuid())
+  title       String
+  description String?  @db.Text
+  location    String?
+  salary      String?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  interests   CandidateOfferInterest[]
+}
+
+model CandidateOfferInterest {
+  id          String    @id @default(cuid())
+  candidateId String
+  candidate   Candidate @relation(fields: [candidateId], references: [id])
+  offerId     String
+  offer       Offer     @relation(fields: [offerId], references: [id])
+  interestLevel Int     @default(3) // 1-5
+  notes       String?   @db.Text
+  createdAt   DateTime  @default(now())
+}
+
+model CandidateConversation {
+  id              String         @id @default(cuid())
+  candidateId     String?
+  candidate       Candidate?      @relation(fields: [candidateId], references: [id])
+  externalId      String?        // Phone or ID from source
+  channel         SourceChannel  @default(WHATSAPP)
+  rawText         String         @db.Text
+  normalizedText  String?        @db.Text
+  summary         String?        @db.Text
+  fileUrl         String?
+  fileHash        String?
+  messageDate     DateTime
+  createdAt       DateTime       @default(now())
+  
+  extractions     ExtractionResult[]
+  matches         MatchingDecision[]
+}
+
+model CandidateDocument {
+  id              String              @id @default(cuid())
+  candidateId     String?
+  candidate       Candidate?           @relation(fields: [candidateId], references: [id])
+  type            DocumentType
+  title           String
+  reviewStatus    DocumentReviewStatus @default(PENDING)
+  
+  extractedName   String?
+  extractedNumber String?
+  issuingCountry  String?
+  issueDate       DateTime?
+  expiryDate      DateTime?
+  isReadable      Boolean?
+  confidence      Float?
+  notes           String?             @db.Text
+  
+  createdAt       DateTime            @default(now())
+  updatedAt       DateTime            @updatedAt
+
+  versions        CandidateDocumentVersion[]
+  extractions     ExtractionResult[]
+  matches         MatchingDecision[]
+}
+
+model CandidateDocumentVersion {
+  id                String            @id @default(cuid())
+  documentId        String
+  document          CandidateDocument @relation(fields: [documentId], references: [id])
+  originalFilename  String?
+  objectKey         String
+  mimeType          String?
+  fileHash          String
+  fileExtension     String
+  fileSize          Int?
+  ocrText           String?           @db.Text
+  sourcePath        String?
+  versionNumber     Int               @default(1)
+  isCurrent         Boolean           @default(true)
+  createdAt         DateTime          @default(now())
+  
+  extractions       ExtractionResult[]
+}
+
+model ExtractionResult {
+  id                String                 @id @default(cuid())
+  sourceType        SourceEntityType
+  conversationId    String?
+  conversation      CandidateConversation?  @relation(fields: [conversationId], references: [id])
+  documentId        String?
+  document          CandidateDocument?      @relation(fields: [documentId], references: [id])
+  docVersionId      String?
+  documentVersion   CandidateDocumentVersion? @relation(fields: [docVersionId], references: [id])
+  
+  fieldName         String
+  extractedValue    String?
+  confidence        Float
+  status            ExtractionReviewStatus @default(PENDING)
+  reviewedById      String?
+  spreadsheetRowId  String?
+  spreadsheetRow    SpreadsheetImportRow?   @relation(fields: [spreadsheetRowId], references: [id])
+  
+  createdAt         DateTime               @default(now())
+}
+
+model MatchingDecision {
+  id                String                @id @default(cuid())
+  candidateId       String?
+  candidate         Candidate?            @relation(fields: [candidateId], references: [id])
+  sourceType        SourceEntityType
+  conversationId    String?
+  conversation      CandidateConversation? @relation(fields: [conversationId], references: [id])
+  documentId        String?
+  document          CandidateDocument?     @relation(fields: [documentId], references: [id])
+  
+  matchType         MatchType
+  score             Float
+  status            MatchResolutionStatus @default(PENDING_REVIEW)
+  notes             String?               @db.Text
+  spreadsheetRowId  String?
+  spreadsheetRow    SpreadsheetImportRow?  @relation(fields: [spreadsheetRowId], references: [id])
+  
+  createdAt         DateTime              @default(now())
+}
+
+model CandidateStatusHistory {
+  id          String          @id @default(cuid())
+  candidateId String
+  candidate   Candidate       @relation(fields: [candidateId], references: [id])
+  fromStatus  CandidateStatus?
+  toStatus    CandidateStatus
+  notes       String?         @db.Text
+  changedById String?
+  createdAt   DateTime        @default(now())
+}
+
+model CandidateTask {
+  id          String      @id @default(cuid())
+  candidateId String
+  candidate   Candidate   @relation(fields: [candidateId], references: [id])
+  assignedToId String?
+  assignedTo  User?       @relation(fields: [assignedToId], references: [id])
+  type        TaskType
+  title       String
+  description String?     @db.Text
+  status      TaskStatus  @default(PENDING)
+  dueDate     DateTime?
+  completedAt DateTime?
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+}
+
+model ReviewTask {
+  id              String   @id @default(cuid())
+  taskType        String   // DOCUMENT_REVIEW, MATCH_REVIEW
+  sourceType      String   // CONVERSATION, DOCUMENT
+  sourceId        String
+  priority        String   @default("MEDIUM") // LOW, MEDIUM, HIGH, URGENT
+  status          String   @default("PENDING") // PENDING, ASSIGNED, COMPLETED, REJECTED
+  
+  assignedToId    String?
+  assignedTo      User?    @relation(fields: [assignedToId], references: [id])
+  
+  candidateId     String?
+  candidate       Candidate? @relation(fields: [candidateId], references: [id])
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  resolvedAt      DateTime?
+  decisionMetadata Json?
+}
+
+model CandidateActivity {
+  id          String    @id @default(cuid())
+  candidateId String
+  candidate   Candidate @relation(fields: [candidateId], references: [id])
+  actorId     String?
+  actor       User?     @relation("Actor", fields: [actorId], references: [id])
+  type        String    // e.g., "STATUS_CHANGE", "DOCUMENT_UPLOAD", "NOTE_ADDED"
+  description String    @db.Text
+  metadata    Json?
+  createdAt   DateTime  @default(now())
+}
+
+model LegalReview {
+  id              String             @id @default(cuid())
+  candidateId     String
+  candidate       Candidate          @relation(fields: [candidateId], references: [id])
+  reviewerId      String?
+  reviewer        User?              @relation(fields: [reviewerId], references: [id])
+  status          LegalReviewStatus @default(PENDING)
+  notes           String?            @db.Text
+  requiredDocsList String?           @db.Text
+  
+  decisionDate    DateTime?
+  createdAt       DateTime           @default(now())
+  updatedAt       DateTime           @updatedAt
+}
+
+model CoordinatorHandover {
+  id              String         @id @default(cuid())
+  candidateId     String         @unique
+  candidate       Candidate      @relation(fields: [candidateId], references: [id])
+  coordinatorId   String?
+  coordinator     User?           @relation(fields: [coordinatorId], references: [id])
+  status          HandoverStatus @default(PENDING)
+  
+  plannedArrivalDate DateTime?
+  actualArrivalDate  DateTime?
+  accommodationName  String?
+  location           String?
+  notes              String?         @db.Text
+  
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+}
+
+model CandidateIssue {
+  id          String      @id @default(cuid())
+  candidateId String
+  candidate   Candidate   @relation(fields: [candidateId], references: [id])
+  type        IssueType
+  status      IssueStatus @default(OPEN)
+  title       String
+  description String      @db.Text
+  priority    Int         @default(3) // 1-5
+  
+  resolvedAt  DateTime?
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+}
+
+model SpreadsheetImport {
+  id          String                  @id @default(cuid())
+  filename    String
+  fileUrl     String
+  type        SpreadsheetImportType
+  status      SpreadsheetImportStatus @default(UPLOADED)
+  rowCount    Int                     @default(0)
+  processedCount Int                  @default(0)
+  errorCount  Int                     @default(0)
+  
+  createdAt   DateTime                @default(now())
+  updatedAt   DateTime                @updatedAt
+
+  rows        SpreadsheetImportRow[]
+}
+
+model SpreadsheetImportRow {
+  id          String            @id @default(cuid())
+  importId    String
+  import      SpreadsheetImport @relation(fields: [importId], references: [id])
+  rawContent  Json
+  status      String            // "PENDING", "MATCHED", "CREATED", "ERROR", "SKIPPED"
+  error       String?
+  candidateId String?           // Linked candidate after match or creation
+  
+  extractions ExtractionResult[]
+  matches     MatchingDecision[]
+  
+  createdAt   DateTime          @default(now())
+}
+
+model AuditLog {
+  id          String   @id @default(cuid())
+  userId      String?
+  user        User?    @relation(fields: [userId], references: [id])
+  action      String
+  entityType  String
+  entityId    String
+  oldValue    Json?
+  newValue    Json?
+  ipAddress   String?
+  userAgent   String?
+  createdAt   DateTime @default(now())
+}
+model JobOrder {
+  id              String      @id @default(cuid())
+  title           String
+  clientName      String
+  location        String
+  quota           Int
+  status          JobStatus   @default(OPEN)
+  description     String?     @db.Text
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+
+  candidates      CandidateJobOrder[]
+}
+
+model CandidateJobOrder {
+  id              String      @id @default(cuid())
+  candidateId     String
+  candidate       Candidate   @relation(fields: [candidateId], references: [id])
+  jobOrderId      String
+  jobOrder        JobOrder    @relation(fields: [jobOrderId], references: [id])
+  joinedAt        DateTime    @default(now())
+
+  @@unique([candidateId, jobOrderId])
+}

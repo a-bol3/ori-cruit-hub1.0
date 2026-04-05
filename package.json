@@ -1,0 +1,40 @@
+{
+  "name": "ori-cruit-hub",
+  "private": true,
+  "packageManager": "pnpm@10.0.0",
+  "scripts": {
+    "dev": "turbo run dev",
+    "build": "turbo run build",
+    "lint": "turbo run lint",
+    "test": "turbo run test",
+    "format": "turbo run format",
+    "db:generate": "prisma generate --schema=./prisma/schema.prisma",
+    "db:migrate": "prisma migrate dev --schema=./prisma/schema.prisma",
+    "db:deploy": "prisma migrate deploy --schema=./prisma/schema.prisma",
+    "db:seed": "tsx prisma/seed.ts",
+    "docker:up": "docker compose up -d",
+    "docker:down": "docker compose down",
+    "docker:prod": "docker compose -f docker-compose.prod.yml up -d --build"
+  },
+  "dependencies": {
+    "@aws-sdk/client-s3": "^3.1024.0",
+    "@aws-sdk/s3-request-presigner": "^3.1024.0",
+    "@nestjs/platform-express": "^11.0.1",
+    "@prisma/client": "^6.4.1",
+    "@radix-ui/react-progress": "^1.1.8",
+    "@radix-ui/react-slot": "^1.2.4",
+    "date-fns": "^4.1.0",
+    "framer-motion": "^12.38.0",
+    "lucide-react": "^0.477.0",
+    "multer": "^2.1.1",
+    "openai": "^6.33.0",
+    "xlsx": "^0.18.5"
+  },
+  "devDependencies": {
+    "@types/multer": "^2.1.0",
+    "prisma": "^6.4.1",
+    "tsx": "^4.19.3",
+    "turbo": "^2.4.2",
+    "typescript": "^5.7.3"
+  }
+}

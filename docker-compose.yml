@@ -1,0 +1,54 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: ori-cruit-postgres
+    restart: always
+    environment:
+      POSTGRES_DB: ori_cruit_hub
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+
+  redis:
+    image: redis:7-alpine
+    container_name: ori-cruit-redis
+    restart: always
+    ports:
+      - "6381:6379"
+
+  minio:
+    image: minio/minio:latest
+    container_name: ori-cruit-minio
+    restart: always
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin
+    ports:
+      - "9002:9000"
+      - "9003:9001"
+    volumes:
+      - minio_data:/data
+
+  minio-init:
+    image: minio/mc:latest
+    container_name: ori-cruit-minio-init
+    depends_on:
+      - minio
+    entrypoint: >
+      /bin/sh -c "
+      sleep 5;
+      mc alias set local http://minio:9000 minioadmin minioadmin &&
+      mc mb -p local/candidate-conversations || true &&
+      mc mb -p local/candidate-documents || true &&
+      mc mb -p local/spreadsheet-imports || true &&
+      mc mb -p local/exports || true &&
+      mc anonymous set public local/candidate-documents || true
+      "
+
+volumes:
+  pg_data:
+  minio_data:
