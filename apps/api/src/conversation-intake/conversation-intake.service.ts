@@ -63,8 +63,11 @@ export class ConversationIntakeService {
       },
     });
 
-    // Enqueue for AI extraction
+    // Enqueue conversation intake for normalization and matching
     await this.queuesService.enqueueConversationIntake(conversation.id);
+
+    // Enqueue a second extraction stage for the dedicated conversation-extraction worker
+    await this.queuesService.enqueueConversationExtraction(conversation.id);
 
     return {
       duplicate: false,

@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Param, Body, UseGuards, Req } from '@nestjs/common';
+import { Controller, Get, Post, Patch, Param, Body, UseGuards, Req } from '@nestjs/common';
 import { ComplianceService } from './compliance.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 
@@ -31,7 +31,7 @@ export class ComplianceController {
     return this.complianceService.getActiveHandovers();
   }
 
-  @Post('handovers/:id')
+  @Patch('handovers/:id')
   updateHandover(
     @Param('id') id: string,
     @Body() data: any,
@@ -46,5 +46,17 @@ export class ComplianceController {
   @Get('issues')
   getIssues() {
     return this.complianceService.getIssues();
+  }
+
+  @Post('issues')
+  createIssue(
+    @Body() body: { candidateId: string; issueType: string; details?: string; priority?: string | number },
+    @Req() req: any
+  ) {
+    const priority = typeof body.priority === 'string' ? parseInt(body.priority) : body.priority;
+    return this.complianceService.createIssue(body.candidateId, req.user.id, {
+      ...body,
+      priority
+    });
   }
 }

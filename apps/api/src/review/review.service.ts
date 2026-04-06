@@ -115,12 +115,41 @@ export class ReviewService {
 
   private async handleCorrectData(data: { type: string; sourceId: string; fields: any }, userId: string) {
     if (data.type === 'EXTRACTION') {
-      // Logic to update extraction results or the linked entity
-      // For now, we update the ExtractionResult status
-      await this.prisma.extractionResult.updateMany({
-        where: { id: { in: Object.keys(data.fields) } },
-        data: { status: 'CONFIRMED' },
+      // Update extraction results with corrected values
+      for (const [extractionId, correctedValue] of Object.entries(data.fields)) {
+        if (correctedValue && typeof correctedValue === 'string') {
+          await this.prisma.extractionResult.update({
+            where: { id: extractionId },
+            data: {
+              extractedValue: correctedValue,
+              status: 'CONFIRMED',
+              confidence: 1.0, // Mark as manually corrected
+            },
+          });
+        }
+      }
+
+      // Create timeline activity for the correction
+      const conversation = await this.prisma.candidateConversation.findUnique({
+        where: { id: data.sourceId },
+        include: { candidate: true },
       });
+
+      if (conversation?.candidateId) {
+        await this.prisma.candidateActivity.create({
+          data: {
+            candidateId: conversation.candidateId,
+            type: 'DATA_UPDATED',
+            description: `Extraction data corrected for conversation ${conversation.externalId}`,
+            actorId: userId,
+            metadata: {
+              correctedFields: Object.keys(data.fields),
+              sourceType: 'CONVERSATION',
+              sourceId: data.sourceId,
+            },
+          },
+        });
+      }
     }
   }
 }

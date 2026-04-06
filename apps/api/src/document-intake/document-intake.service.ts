@@ -88,11 +88,22 @@ export class DocumentIntakeService {
       extension,
     });
 
-    await this.storageService.uploadObject({
-      objectKey,
-      body: file.buffer,
-      mimeType: file.mimetype,
-    });
+    // 🔧 ARREGLO CRÍTICO: Garantizar que si S3/MinIO falla, rollback la BD
+    let storageSuccess = false;
+    try {
+      await this.storageService.uploadObject({
+        objectKey,
+        body: file.buffer,
+        mimeType: file.mimetype,
+      });
+      storageSuccess = true;
+    } catch (storageError) {
+      // Rollback: si S3 falla, eliminar registro de BD
+      await this.prisma.candidateDocument.delete({
+        where: { id: logicalDocument.id }
+      });
+      throw new Error(`Storage upload failed: ${storageError.message}. Document rolled back.`);
+    }
 
     const version = await this.prisma.candidateDocumentVersion.create({
       data: {

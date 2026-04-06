@@ -157,4 +157,36 @@ export class CandidatesService {
       },
     });
   }
+
+  async delete(id: string, userId: string) {
+    // Verify candidate exists
+    const candidate = await this.prisma.candidate.findUnique({
+      where: { id },
+    });
+
+    if (!candidate) {
+      throw new NotFoundException(`Candidate with ID ${id} not found`);
+    }
+
+    // Delete the candidate (Prisma will handle cascading deletes based on schema)
+    await this.prisma.candidate.delete({
+      where: { id },
+    });
+
+    // Log the deletion activity
+    await this.prisma.candidateActivity.create({
+      data: {
+        candidateId: id,
+        actorId: userId,
+        type: 'DELETION',
+        description: `Candidate ${candidate.firstName} ${candidate.lastName} was deleted`,
+        metadata: {
+          deletedBy: userId,
+          candidateId: id,
+        },
+      },
+    });
+
+    return { message: 'Candidate deleted successfully' };
+  }
 }

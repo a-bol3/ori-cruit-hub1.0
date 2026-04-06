@@ -5,6 +5,7 @@ import { IntakeModule } from './intake/intake.module';
 import { ExtractionModule } from './extraction/extraction.module';
 import { SpreadsheetsModule } from './spreadsheets/spreadsheets.module';
 import { StorageModule } from './storage/storage.module';
+import { ConversationsModule } from './conversations/conversations.module';
 
 @Module({
   imports: [
@@ -18,6 +19,7 @@ import { StorageModule } from './storage/storage.module';
     }),
     IntakeModule,
     ExtractionModule,
+    ConversationsModule,
     SpreadsheetsModule,
   ],
 })

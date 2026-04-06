@@ -145,4 +145,45 @@ export class ComplianceService {
       orderBy: { createdAt: 'desc' }
     });
   }
+
+  async createIssue(
+    candidateId: string,
+    userId: string,
+    body: { issueType: string; details?: string; priority?: number }
+  ) {
+    // Validar que el candidato existe
+    const candidate = await this.prisma.candidate.findUnique({
+      where: { id: candidateId }
+    });
+    if (!candidate) throw new Error(`Candidate ${candidateId} not found`);
+
+    const issue = await this.prisma.candidateIssue.create({
+      data: {
+        candidateId,
+        type: body.issueType as any,
+        title: `Issue: ${body.issueType}`,
+        description: body.details || '',
+        priority: body.priority || 3,
+        status: 'OPEN'
+      },
+      include: { candidate: true }
+    });
+
+    // Log de actividad
+    await this.prisma.candidateActivity.create({
+      data: {
+        candidateId,
+        actorId: userId,
+        type: 'ISSUE_CREATED',
+        description: `Issue reported: ${body.issueType}. ${body.details || 'No details provided'}. Priority: ${body.priority || 3}`,
+        metadata: {
+          issueId: issue.id,
+          issueType: body.issueType,
+          priority: body.priority || 3
+        }
+      }
+    });
+
+    return issue;
+  }
 }

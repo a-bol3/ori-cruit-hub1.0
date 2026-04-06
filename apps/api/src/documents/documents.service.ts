@@ -1,9 +1,11 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { StorageService } from '../storage/storage.service';
 
 @Injectable()
 export class DocumentsService {
+  private readonly logger = new Logger(DocumentsService.name);
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly storageService: StorageService
@@ -55,5 +57,30 @@ export class DocumentsService {
       where: { id: documentId },
       data: { candidateId },
     });
+  }
+
+  async delete(id: string) {
+    const doc = await this.prisma.candidateDocument.findUnique({
+      where: { id },
+      include: { versions: true }
+    });
+
+    if (!doc) throw new NotFoundException(`Document ${id} not found`);
+
+    // Eliminar archivos de S3
+    for (const version of doc.versions) {
+      try {
+        await this.storageService.deleteObject(version.objectKey);
+      } catch (err) {
+        this.logger.warn(`Failed to delete S3 object ${version.objectKey}`, err.message);
+      }
+    }
+
+    // Eliminar de BD
+    await this.prisma.candidateDocument.delete({
+      where: { id }
+    });
+
+    return { success: true, deletedId: id };
   }
 }

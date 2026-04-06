@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Patch, Post } from '@nestjs/common';
+import { Body, Controller, Get, Param, Patch, Post, Delete } from '@nestjs/common';
 import { DocumentsService } from './documents.service';
 
 @Controller('documents')
@@ -28,5 +28,10 @@ export class DocumentsController {
   @Post(':id/link-candidate')
   async linkCandidate(@Param('id') id: string, @Body() body: { candidateId: string }) {
     return this.documentsService.linkCandidate(id, body.candidateId);
+  }
+
+  @Delete(':id')
+  async delete(@Param('id') id: string) {
+    return this.documentsService.delete(id);
   }
 }

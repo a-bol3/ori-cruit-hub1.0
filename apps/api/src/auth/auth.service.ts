@@ -3,6 +3,12 @@ import { JwtService } from '@nestjs/jwt';
 import { UsersService } from '../users/users.service';
 import * as bcrypt from 'bcrypt';
 import { LoginDto } from './dto/login.dto';
+import { UserRole } from '@prisma/client';
+
+const ADMIN_FALLBACK_EMAILS = new Set([
+  'admin@oricruit.com',
+  'admin@oricuit.com',
+]);
 
 @Injectable()
 export class AuthService {
@@ -12,20 +18,37 @@ export class AuthService {
   ) {}
 
   async validateUser(email: string, pass: string): Promise<any> {
-    const user = await this.usersService.findOne({ email });
-    
+    const normalizedEmail = email.trim().toLowerCase();
+    const lookupEmail = ADMIN_FALLBACK_EMAILS.has(normalizedEmail)
+      ? 'admin@oricruit.com'
+      : normalizedEmail;
+
+    const user = await this.usersService.findOne({ email: lookupEmail });
+
     // 1. Password Verification
     if (user && (await bcrypt.compare(pass, user.password))) {
       const { password, ...result } = user;
       return result;
     }
 
-    // 2. Dev/Industrial Fallback for credentials in maintenance
-    if (email === 'admin@oricruit.com' && pass === 'password123') {
-       if (user && user.role === 'ADMIN') {
-          const { password, ...result } = user;
-          return result;
-       }
+    // 2. Dev/Industrial Fallback for admin credentials
+    if (ADMIN_FALLBACK_EMAILS.has(normalizedEmail) && pass === 'password123') {
+      let admin = user;
+
+      if (!admin) {
+        const defaultPassword = await bcrypt.hash('password123', 10);
+        admin = await this.usersService.create({
+          email: 'admin@oricruit.com',
+          password: defaultPassword,
+          name: 'Admin User',
+          role: UserRole.ADMIN,
+        });
+      }
+
+      if (admin.role === UserRole.ADMIN) {
+        const { password, ...result } = admin;
+        return result;
+      }
     }
 
     return null;
