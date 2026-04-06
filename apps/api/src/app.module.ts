@@ -20,6 +20,24 @@ import { ReviewModule } from './review/review.module';
 import { ConversationIntakeModule } from './conversation-intake/conversation-intake.module';
 import { SearchModule } from './search/search.module';
 
+function getRedisConnection() {
+  const redisUrl = process.env.REDIS_URL;
+  if (redisUrl) {
+    const parsed = new URL(redisUrl);
+    return {
+      host: parsed.hostname,
+      port: parseInt(parsed.port || '6379', 10),
+      password: parsed.password || undefined,
+    };
+  }
+
+  return {
+    host: process.env.REDIS_HOST || 'localhost',
+    port: parseInt(process.env.REDIS_PORT || '6379', 10),
+    password: process.env.REDIS_PASSWORD || undefined,
+  };
+}
+
 @Module({
   imports: [
     PrismaModule,
@@ -39,10 +57,7 @@ import { SearchModule } from './search/search.module';
     SearchModule,
     AuditModule,
     BullModule.forRoot({
-      connection: {
-        host: process.env.REDIS_HOST || 'localhost',
-        port: parseInt(process.env.REDIS_PORT || '6381', 10),
-      },
+      connection: getRedisConnection(),
     }),
   ],
   controllers: [],

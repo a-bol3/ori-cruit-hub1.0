@@ -10,6 +10,10 @@ const ADMIN_FALLBACK_EMAILS = new Set([
   'admin@oricuit.com',
 ]);
 
+const ADMIN_FALLBACK_ENABLED =
+  process.env.NODE_ENV !== 'production' &&
+  process.env.ADMIN_FALLBACK_ENABLED !== 'false';
+
 @Injectable()
 export class AuthService {
   constructor(
@@ -31,8 +35,12 @@ export class AuthService {
       return result;
     }
 
-    // 2. Dev/Industrial Fallback for admin credentials
-    if (ADMIN_FALLBACK_EMAILS.has(normalizedEmail) && pass === 'password123') {
+    // 2. Dev-only fallback for admin credentials
+    if (
+      ADMIN_FALLBACK_ENABLED &&
+      ADMIN_FALLBACK_EMAILS.has(normalizedEmail) &&
+      pass === 'password123'
+    ) {
       let admin = user;
 
       if (!admin) {

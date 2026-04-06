@@ -6,12 +6,20 @@ import { AuthController } from './auth.controller';
 import { UsersModule } from '../users/users.module';
 import { JwtStrategy } from './strategies/jwt.strategy';
 
+function getJwtSecret(): string {
+  const secret = process.env.JWT_SECRET;
+  if (!secret) {
+    throw new Error('Missing JWT_SECRET environment variable');
+  }
+  return secret;
+}
+
 @Module({
   imports: [
     UsersModule,
     PassportModule,
     JwtModule.register({
-      secret: process.env.JWT_SECRET || 'secretKey',
+      secret: getJwtSecret(),
       signOptions: { expiresIn: '7d' },
     }),
   ],
