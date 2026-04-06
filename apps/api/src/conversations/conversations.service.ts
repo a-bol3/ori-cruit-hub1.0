@@ -2,12 +2,13 @@ import { Injectable, BadRequestException } from '@nestjs/common';
 import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
 import { PrismaService } from '../prisma/prisma.service';
+import { QUEUE_NAMES, JOB_NAMES } from '../queues/queue.constants';
 
 @Injectable()
 export class ConversationsService {
   constructor(
     private prisma: PrismaService,
-    @InjectQueue('conversation-intake') private intakeQueue: Queue,
+    @InjectQueue(QUEUE_NAMES.CONVERSATION_INTAKE) private intakeQueue: Queue,
   ) {}
 
   async uploadConversation(file: Express.Multer.File) {
@@ -40,7 +41,7 @@ export class ConversationsService {
     });
 
     // 2. Add to BullMQ for processing
-    await this.intakeQueue.add('process-intake', {
+    await this.intakeQueue.add(JOB_NAMES.CONVERSATION_INTAKE_PROCESS, {
       conversationId: conversation.id,
       phoneNumber,
     });
