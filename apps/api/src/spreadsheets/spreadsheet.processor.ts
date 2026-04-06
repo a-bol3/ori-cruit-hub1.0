@@ -4,8 +4,9 @@ import { Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { StorageService } from '../storage/storage.service';
 import * as XLSX from 'xlsx';
+import { QUEUE_NAMES } from '../queues/queue.constants';
 
-@Processor('spreadsheet-intake')
+@Processor(QUEUE_NAMES.SPREADSHEET_INTAKE)
 export class SpreadsheetProcessor extends WorkerHost {
   private readonly logger = new Logger(SpreadsheetProcessor.name);
 

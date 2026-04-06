@@ -11,8 +11,7 @@ const ADMIN_FALLBACK_EMAILS = new Set([
 ]);
 
 const ADMIN_FALLBACK_ENABLED =
-  process.env.NODE_ENV !== 'production' &&
-  process.env.ADMIN_FALLBACK_ENABLED !== 'false';
+  process.env.ADMIN_FALLBACK_ENABLED === 'true';
 
 @Injectable()
 export class AuthService {

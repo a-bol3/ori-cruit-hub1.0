@@ -2,6 +2,22 @@ import { Injectable } from '@nestjs/common';
 import { S3Client, PutObjectCommand, DeleteObjectCommand, GetObjectCommand } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 
+function getMinioCredentials() {
+  const accessKeyId = process.env.MINIO_ACCESS_KEY;
+  const secretAccessKey = process.env.MINIO_SECRET_KEY;
+
+  if (process.env.NODE_ENV === 'production') {
+    if (!accessKeyId || !secretAccessKey) {
+      throw new Error('Missing MINIO_ACCESS_KEY or MINIO_SECRET_KEY in production environment');
+    }
+  }
+
+  return {
+    accessKeyId: accessKeyId || 'minioadmin',
+    secretAccessKey: secretAccessKey || 'minioadmin',
+  };
+}
+
 @Injectable()
 export class StorageService {
   private s3: S3Client;
@@ -18,10 +34,7 @@ export class StorageService {
       region: 'us-east-1',
       endpoint: `${useSsl ? 'https' : 'http'}://${endpoint}:${port}`,
       forcePathStyle: true,
-      credentials: {
-        accessKeyId: process.env.MINIO_ACCESS_KEY || 'minioadmin',
-        secretAccessKey: process.env.MINIO_SECRET_KEY || 'minioadmin',
-      },
+      credentials: getMinioCredentials(),
     });
   }
 

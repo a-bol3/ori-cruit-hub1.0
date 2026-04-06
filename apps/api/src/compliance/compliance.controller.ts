@@ -1,6 +1,24 @@
-import { Controller, Get, Post, Patch, Param, Body, UseGuards, Req } from '@nestjs/common';
+import { BadRequestException, Body, Controller, Get, Param, Patch, Post, Req, UseGuards } from '@nestjs/common';
+import { Request } from 'express';
 import { ComplianceService } from './compliance.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+
+interface AuthRequest extends Request {
+  user: { id: string };
+}
+
+interface UpdateHandoverBody {
+  actualArrivalDate?: string;
+  location?: string;
+  [key: string]: unknown;
+}
+
+interface CreateIssueBody {
+  candidateId: string;
+  issueType: string;
+  details?: string;
+  priority?: string | number;
+}
 
 @Controller('compliance')
 @UseGuards(JwtAuthGuard)
@@ -18,9 +36,12 @@ export class ComplianceController {
   approveLegalReview(
     @Param('id') id: string,
     @Body('notes') notes: string,
-    @Req() req: any
+    @Req() req: AuthRequest,
   ) {
-    const reviewerId = req.user.id;
+    const reviewerId = req.user?.id;
+    if (!reviewerId) {
+      throw new BadRequestException('Authenticated user not found');
+    }
     return this.complianceService.approveLegalReview(id, reviewerId, notes);
   }
 
@@ -34,10 +55,13 @@ export class ComplianceController {
   @Patch('handovers/:id')
   updateHandover(
     @Param('id') id: string,
-    @Body() data: any,
-    @Req() req: any
+    @Body() data: UpdateHandoverBody,
+    @Req() req: AuthRequest,
   ) {
-    const actorId = req.user.id;
+    const actorId = req.user?.id;
+    if (!actorId) {
+      throw new BadRequestException('Authenticated user not found');
+    }
     return this.complianceService.updateHandover(id, data, actorId);
   }
 
@@ -50,13 +74,18 @@ export class ComplianceController {
 
   @Post('issues')
   createIssue(
-    @Body() body: { candidateId: string; issueType: string; details?: string; priority?: string | number },
-    @Req() req: any
+    @Body() body: CreateIssueBody,
+    @Req() req: AuthRequest,
   ) {
+    const userId = req.user?.id;
+    if (!userId) {
+      throw new BadRequestException('Authenticated user not found');
+    }
+
     const priority = typeof body.priority === 'string' ? parseInt(body.priority) : body.priority;
-    return this.complianceService.createIssue(body.candidateId, req.user.id, {
+    return this.complianceService.createIssue(body.candidateId, userId, {
       ...body,
-      priority
+      priority,
     });
   }
 }

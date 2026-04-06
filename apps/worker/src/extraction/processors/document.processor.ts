@@ -3,8 +3,9 @@ import { Job } from 'bullmq';
 import { Logger } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { ExtractionService } from '../services/extraction.service';
+import { QUEUE_NAMES } from '../../shared/queue.constants';
 
-@Processor('document-intake')
+@Processor(QUEUE_NAMES.DOCUMENT_INTAKE)
 export class DocumentProcessor extends WorkerHost {
   private readonly logger = new Logger(DocumentProcessor.name);
 

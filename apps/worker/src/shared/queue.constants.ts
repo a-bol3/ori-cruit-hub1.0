@@ -6,7 +6,7 @@ export const QUEUE_NAMES = {
   CANDIDATE_MATCHING: 'candidate-matching',
   CONVERSATION_INTAKE: 'conversation-intake',
   CONVERSATION_EXTRACTION: 'conversation-extraction',
-  SPREADSHEET_PARSE: 'spreadsheet-parse',
+  SPREADSHEET_INTAKE: 'spreadsheet-intake',
   SPREADSHEET_COMMIT: 'spreadsheet-commit',
 } as const;
 
@@ -18,6 +18,6 @@ export const JOB_NAMES = {
   CANDIDATE_MATCHING_PROCESS: 'candidate-matching-process',
   CONVERSATION_INTAKE_PROCESS: 'conversation-intake-process',
   CONVERSATION_EXTRACTION_PROCESS: 'conversation-extraction-process',
-  SPREADSHEET_PARSE_PROCESS: 'spreadsheet-parse-process',
+  SPREADSHEET_INTAKE_PROCESS: 'spreadsheet-intake-process',
   SPREADSHEET_COMMIT_PROCESS: 'spreadsheet-commit-process',
 } as const;

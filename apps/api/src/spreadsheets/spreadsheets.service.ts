@@ -4,6 +4,7 @@ import { StorageService } from '../storage/storage.service';
 import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
 import { SpreadsheetImportStatus } from '@prisma/client';
+import { QUEUE_NAMES } from '../queues/queue.constants';
 
 @Injectable()
 export class SpreadsheetsService {
@@ -12,7 +13,7 @@ export class SpreadsheetsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly storageService: StorageService,
-    @InjectQueue('spreadsheet-intake') private spreadsheetQueue: Queue
+    @InjectQueue(QUEUE_NAMES.SPREADSHEET_INTAKE) private spreadsheetQueue: Queue
   ) {}
 
   async createImport(file: Express.Multer.File, type: any) {

@@ -6,7 +6,7 @@ export const QUEUES = {
   DOCUMENT_OCR: 'document-ocr',
   DOCUMENT_CLASSIFICATION: 'document-classification',
   DOCUMENT_EXTRACTION: 'document-extraction',
-  SPREADSHEET_PARSE: 'spreadsheet-parse',
+  SPREADSHEET_INTAKE: 'spreadsheet-intake',
   SPREADSHEET_COMMIT: 'spreadsheet-commit',
 };
 

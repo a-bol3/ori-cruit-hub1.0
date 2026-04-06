@@ -6,8 +6,9 @@ import { StorageService } from '../../storage/storage.service';
 import * as XLSX from 'xlsx';
 import { S3Client, GetObjectCommand } from '@aws-sdk/client-s3';
 import { Readable } from 'stream';
+import { QUEUE_NAMES } from '../../shared/queue.constants';
 
-@Processor('spreadsheet-intake')
+@Processor(QUEUE_NAMES.SPREADSHEET_INTAKE)
 export class SpreadsheetProcessor extends WorkerHost {
   private readonly logger = new Logger(SpreadsheetProcessor.name);
 
