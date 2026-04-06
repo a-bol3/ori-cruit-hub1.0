@@ -13,6 +13,7 @@ import { ConversationsService } from './conversations.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
+import { UserRole } from '@prisma/client';
 
 @Controller('conversations')
 @UseGuards(JwtAuthGuard, RolesGuard)
@@ -20,7 +21,7 @@ export class ConversationsController {
   constructor(private readonly conversationsService: ConversationsService) {}
 
   @Post('upload')
-  @Roles('ADMIN', 'RECRUITER')
+  @Roles(UserRole.ADMIN, UserRole.RECRUITER)
   @UseInterceptors(FileInterceptor('file'))
   async uploadFile(@UploadedFile() file: Express.Multer.File) {
     return this.conversationsService.uploadConversation(file);
