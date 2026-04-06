@@ -3,8 +3,9 @@ import { Job } from 'bullmq';
 import { PrismaService } from '../prisma/prisma.service';
 import { ExtractionEngine } from '../extraction/extraction.engine';
 import { MatchingEngine } from '../matching/matching.engine';
+import { QUEUE_NAMES } from '../shared/queue.constants';
 
-@Processor('conversation-intake')
+@Processor(QUEUE_NAMES.CONVERSATION_INTAKE)
 export class IntakeProcessor extends WorkerHost {
   constructor(
     private prisma: PrismaService,
