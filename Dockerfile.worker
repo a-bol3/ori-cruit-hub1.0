@@ -1,0 +1,29 @@
+# Use Node.js 20 Alpine as base image for smaller size
+FROM node:20-alpine AS base
+
+# Install pnpm globally
+RUN npm install -g pnpm
+
+# Set working directory
+WORKDIR /app
+
+# Copy package files
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml turbo.json ./
+
+# Copy worker package files
+COPY apps/worker/package.json ./apps/worker/
+
+# Install dependencies
+RUN pnpm install --frozen-lockfile
+
+# Production stage
+FROM base AS production
+
+# Copy source code
+COPY apps/worker/ ./apps/worker/
+
+# Build the application
+RUN pnpm build:worker
+
+# Start the application
+CMD ["pnpm", "start:worker"]
